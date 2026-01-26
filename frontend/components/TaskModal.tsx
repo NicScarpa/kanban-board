@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Task, Priority, ColumnId, Attachment, COLUMNS, PRIORITY_COLORS } from '@/lib/types';
 import { X, Upload, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -21,6 +21,18 @@ export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus
     const [prompt, setPrompt] = useState(task?.prompt || '');
     const [attachments, setAttachments] = useState<Attachment[]>(task?.attachments || []);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Reset form state when modal opens or task changes
+    useEffect(() => {
+        if (isOpen) {
+            setTitle(task?.title || '');
+            setDescription(task?.description || '');
+            setPriority(task?.priority || 'medium');
+            setTags(task?.tags.join(', ') || '');
+            setPrompt(task?.prompt || '');
+            setAttachments(task?.attachments || []);
+        }
+    }, [isOpen, task]);
 
     if (!isOpen) return null;
 
