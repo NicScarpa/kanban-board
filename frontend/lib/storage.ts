@@ -1,156 +1,179 @@
-import { Task, Project } from './types';
-import { v4 as uuidv4 } from 'uuid';
+import { Task, Project, Attachment } from './types';
+import { supabase } from './supabase';
 
-const PROJECTS_KEY = 'kanban-projects';
-const TASKS_KEY = 'kanban-tasks';
-const MIGRATION_KEY = 'kanban-migrated-v2';
+// ============================================
+// Projects CRUD
+// ============================================
 
-// --- Migration ---
+export async function loadProjects(): Promise<Project[]> {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-function runMigrationIfNeeded(): void {
-    if (typeof window === 'undefined') return;
-    if (localStorage.getItem(MIGRATION_KEY)) return;
+    if (error) throw error;
+    if (!data) return [];
 
-    try {
-        const raw = localStorage.getItem(TASKS_KEY);
-        if (!raw) {
-            localStorage.setItem(MIGRATION_KEY, 'true');
-            return;
-        }
-
-        const legacyTasks: (Task & { projectId?: string })[] = JSON.parse(raw);
-        const needsMigration = legacyTasks.length > 0 && legacyTasks.some(t => !t.projectId);
-
-        if (needsMigration) {
-            const defaultProject: Project = {
-                id: uuidv4(),
-                name: 'Default',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
-
-            const migratedTasks = legacyTasks.map(t => ({
-                ...t,
-                projectId: t.projectId || defaultProject.id,
-                tags: t.tags || [],
-                attachments: t.attachments || [],
-                createdAt: t.createdAt || new Date().toISOString(),
-            }));
-
-            localStorage.setItem(PROJECTS_KEY, JSON.stringify([defaultProject]));
-            localStorage.setItem(TASKS_KEY, JSON.stringify(migratedTasks));
-        }
-
-        localStorage.setItem(MIGRATION_KEY, 'true');
-    } catch {
-        console.error('Migration failed');
-    }
+    return data.map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  } catch (error) {
+    console.error('Failed to load projects:', error);
+    return [];
+  }
 }
 
-// --- Projects CRUD ---
-
-export function loadProjects(): Project[] {
-    if (typeof window === 'undefined') return [];
-    runMigrationIfNeeded();
-
-    try {
-        const stored = localStorage.getItem(PROJECTS_KEY);
-        if (!stored) return [];
-        return JSON.parse(stored);
-    } catch {
-        console.error('Failed to load projects');
-        return [];
-    }
+export async function saveProjects(projects: Project[]): Promise<void> {
+  // Not needed for Supabase - use createProject/updateProject instead
+  console.warn('saveProjects() is deprecated with Supabase. Use createProject/renameProject instead.');
 }
 
-export function saveProjects(projects: Project[]): void {
-    if (typeof window === 'undefined') return;
-    try {
-        localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-    } catch {
-        console.error('Failed to save projects');
-    }
-}
+export async function getProject(id: string): Promise<Project | undefined> {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-export function getProject(id: string): Project | undefined {
-    return loadProjects().find(p => p.id === id);
-}
+    if (error) throw error;
+    if (!data) return undefined;
 
-export function createProject(name: string): Project {
-    const project: Project = {
-        id: uuidv4(),
-        name,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
-    const projects = loadProjects();
-    projects.push(project);
-    saveProjects(projects);
-    return project;
-}
-
-export function renameProject(id: string, newName: string): void {
-    const projects = loadProjects();
-    const project = projects.find(p => p.id === id);
-    if (project) {
-        project.name = newName;
-        project.updatedAt = new Date().toISOString();
-        saveProjects(projects);
-    }
-}
-
-export function deleteProject(id: string): void {
-    const projects = loadProjects().filter(p => p.id !== id);
-    saveProjects(projects);
-    // Also delete tasks belonging to this project
-    const allTasks = loadAllTasks();
-    const remaining = allTasks.filter(t => t.projectId !== id);
-    saveAllTasks(remaining);
-}
-
-// --- Tasks (scoped by project) ---
-
-function loadAllTasks(): Task[] {
-    if (typeof window === 'undefined') return [];
-    runMigrationIfNeeded();
-
-    try {
-        const stored = localStorage.getItem(TASKS_KEY);
-        if (!stored) return [];
-        return JSON.parse(stored);
-    } catch {
-        console.error('Failed to load tasks');
-        return [];
-    }
-}
-
-function saveAllTasks(tasks: Task[]): void {
-    if (typeof window === 'undefined') return;
-    try {
-        localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
-    } catch {
-        console.error('Failed to save tasks');
-    }
-}
-
-export function loadTasks(projectId: string): Task[] {
-    return loadAllTasks().filter(t => t.projectId === projectId);
-}
-
-export function saveTasks(tasks: Task[], projectId: string): void {
-    const allTasks = loadAllTasks();
-    const otherTasks = allTasks.filter(t => t.projectId !== projectId);
-    saveAllTasks([...otherTasks, ...tasks]);
-}
-
-// --- Helpers ---
-
-export function getTaskCountsByProject(projectId: string): { total: number; planning: number; inProgress: number; done: number } {
-    const tasks = loadTasks(projectId);
     return {
-        total: tasks.length,
-        planning: tasks.filter(t => t.status === 'planning').length,
-        inProgress: tasks.filter(t => t.status === 'in-progress').length,
-        done: tasks.filter(t => t.status === 'done').length,
+      id: (data as any).id,
+      name: (data as any).name,
+      createdAt: (data as any).created_at,
+      updatedAt: (data as any).updated_at,
     };
+  } catch (error) {
+    console.error('Failed to get project:', error);
+    return undefined;
+  }
+}
+
+export async function createProject(name: string): Promise<Project> {
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({ name } as any)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create project: ${error.message}`);
+  if (!data) throw new Error('No data returned from create project');
+
+  return {
+      id: (data as any).id,
+      name: (data as any).name,
+      createdAt: (data as any).created_at,
+      updatedAt: (data as any).updated_at,
+    };
+}
+
+export async function renameProject(id: string, newName: string): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .update({ name: newName } as any)
+    .eq('id', id);
+
+  if (error) throw new Error(`Failed to rename project: ${error.message}`);
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  // Cascade delete handled by database ON DELETE CASCADE
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(`Failed to delete project: ${error.message}`);
+}
+
+// ============================================
+// Tasks CRUD (scoped by project)
+// ============================================
+
+export async function loadTasks(projectId: string): Promise<Task[]> {
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('order', { ascending: true, nullsFirst: false });
+
+    if (error) throw error;
+    if (!data) return [];
+
+    return data.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      priority: row.priority as Task['priority'],
+      tags: row.tags || [],
+      prompt: row.prompt || undefined,
+      attachments: (row.attachments as Attachment[]) || [],
+      status: row.status as Task['status'],
+      order: row.order || undefined,
+      projectId: row.project_id,
+      createdAt: row.created_at,
+    }));
+  } catch (error) {
+    console.error('Failed to load tasks:', error);
+    return [];
+  }
+}
+
+export async function saveTasks(tasks: Task[], projectId: string): Promise<void> {
+  try {
+    // Delete all tasks for this project first
+    await supabase
+      .from('tasks')
+      .delete()
+      .eq('project_id', projectId);
+
+    // Insert all tasks
+    if (tasks.length > 0) {
+      const { error } = await supabase
+        .from('tasks')
+        .insert(
+          tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            tags: task.tags,
+            prompt: task.prompt || null,
+            attachments: task.attachments,
+            status: task.status,
+            order: task.order || null,
+            project_id: task.projectId,
+            created_at: task.createdAt,
+          })) as any
+        );
+
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Failed to save tasks:', error);
+    throw error;
+  }
+}
+
+// ============================================
+// Helpers
+// ============================================
+
+export async function getTaskCountsByProject(
+  projectId: string
+): Promise<{ total: number; planning: number; inProgress: number; done: number }> {
+  const tasks = await loadTasks(projectId);
+  return {
+    total: tasks.length,
+    planning: tasks.filter(t => t.status === 'planning').length,
+    inProgress: tasks.filter(t => t.status === 'in-progress').length,
+    done: tasks.filter(t => t.status === 'done').length,
+  };
 }

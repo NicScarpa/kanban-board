@@ -7,9 +7,10 @@ import {
   loadProjects,
   createProject,
   renameProject,
-  deleteProject
+  deleteProject,
+  getTaskCountsByProject
 } from '@/lib/storage';
-import ProjectCardWrapper from '@/components/ProjectCardWrapper';
+import ProjectCard from '@/components/ProjectCard';
 import ProjectModal from '@/components/ProjectModal';
 import type { Project } from '@/lib/types';
 
@@ -22,60 +23,37 @@ export default function ProjectDashboard() {
 
   // Carica progetti all'avvio
   useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      try {
-        const loadedProjects = await loadProjects();
-        setProjects(loadedProjects);
-      } catch (error) {
-        console.error('Failed to load projects:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
+    const loadedProjects = loadProjects();
+    setProjects(loadedProjects);
+    setLoading(false);
   }, []);
 
   // Handler creazione progetto
-  const handleCreateProject = async (name: string) => {
-    try {
-      const project = await createProject(name);
-      setProjects([project, ...projects]);
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Failed to create project:', error);
-      alert('Failed to create project');
-    }
+  const handleCreateProject = (name: string) => {
+    const project = createProject(name);
+    setProjects([...projects, project]);
+    setIsModalOpen(false);
   };
 
   // Handler rinomina progetto
-  const handleRenameProject = async (name: string) => {
+  const handleRenameProject = (name: string) => {
     if (!renamingProject) return;
 
-    try {
-      await renameProject(renamingProject.id, name);
+    renameProject(renamingProject.id, name);
 
-      // Ricarica progetti per aggiornare la UI
-      const updatedProjects = await loadProjects();
-      setProjects(updatedProjects);
-      setRenamingProject(null);
-    } catch (error) {
-      console.error('Failed to rename project:', error);
-      alert('Failed to rename project');
-    }
+    // Ricarica progetti per aggiornare la UI
+    const updatedProjects = loadProjects();
+    setProjects(updatedProjects);
+    setRenamingProject(null);
   };
 
   // Handler eliminazione progetto
-  const handleDeleteProject = async (id: string) => {
-    if (!confirm('Delete this project and all its tasks?')) return;
-    
-    try {
-      await deleteProject(id);
-      setProjects(projects.filter(p => p.id !== id));
-    } catch (error) {
-      console.error('Failed to delete project:', error);
-      alert('Failed to delete project');
-    }
+  const handleDeleteProject = (id: string) => {
+    deleteProject(id);
+
+    // Ricarica progetti per aggiornare la UI
+    const updatedProjects = loadProjects();
+    setProjects(updatedProjects);
   };
 
   // Handler apertura progetto
@@ -140,15 +118,19 @@ export default function ProjectDashboard() {
         ) : (
           // Projects Grid
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <ProjectCardWrapper
-                key={project.id}
-                project={project}
-                onOpen={handleOpenProject}
-                onRename={handleStartRename}
-                onDelete={handleDeleteProject}
-              />
-            ))}
+            {projects.map((project) => {
+              const taskCounts = getTaskCountsByProject(project.id);
+              return (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  taskCounts={taskCounts}
+                  onOpen={handleOpenProject}
+                  onRename={handleStartRename}
+                  onDelete={handleDeleteProject}
+                />
+              );
+            })}
           </div>
         )}
       </div>

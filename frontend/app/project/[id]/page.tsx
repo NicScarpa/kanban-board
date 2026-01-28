@@ -13,17 +13,27 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const projectId = params.id as string;
-    const loadedProject = getProject(projectId);
+    const fetchProject = async () => {
+      setLoading(true);
+      try {
+        const projectId = params.id as string;
+        const loadedProject = await getProject(projectId);
 
-    if (!loadedProject) {
-      // Progetto non trovato, redirect alla dashboard
-      router.push('/');
-      return;
-    }
+        if (!loadedProject) {
+          // Progetto non trovato, redirect alla dashboard
+          router.push('/');
+          return;
+        }
 
-    setProject(loadedProject);
-    setLoading(false);
+        setProject(loadedProject);
+      } catch (error) {
+        console.error('Failed to load project:', error);
+        router.push('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProject();
   }, [params.id, router]);
 
   if (loading) {

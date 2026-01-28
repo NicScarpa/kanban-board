@@ -66,37 +66,18 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
 
-    // Load tasks from Supabase on mount
+    // Load tasks from localStorage on mount
     useEffect(() => {
-        const fetchTasks = async () => {
-            setIsLoading(true);
-            try {
-                const storedTasks = await loadTasks(projectId);
-                setTasks(storedTasks);
-            } catch (error) {
-                console.error('Failed to load tasks:', error);
-            } finally {
-                setIsLoaded(true);
-                setIsLoading(false);
-            }
-        };
-        fetchTasks();
+        const storedTasks = loadTasks(projectId);
+        setTasks(storedTasks);
+        setIsLoaded(true);
     }, [projectId]);
 
-    // Save tasks to Supabase whenever they change (with debounce)
+    // Save tasks to localStorage whenever they change
     useEffect(() => {
         if (isLoaded) {
-            const timeoutId = setTimeout(async () => {
-                try {
-                    await saveTasks(tasks, projectId);
-                } catch (error) {
-                    console.error('Failed to save tasks:', error);
-                }
-            }, 500); // 500ms debounce
-
-            return () => clearTimeout(timeoutId);
+            saveTasks(tasks, projectId);
         }
     }, [tasks, isLoaded, projectId]);
 
