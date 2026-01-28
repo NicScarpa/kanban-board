@@ -32,7 +32,7 @@ export default function KanbanColumn({
     onDeleteTask
 }: KanbanColumnProps) {
     return (
-        <div className="flex flex-col min-w-[280px] max-w-[320px] flex-1 h-full">
+        <div className="flex flex-col min-w-[280px] max-w-[320px] flex-1 h-full min-h-0">
             {/* Header */}
             <div
                 className="flex items-center justify-between mb-4 pb-2"
@@ -57,7 +57,7 @@ export default function KanbanColumn({
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`
-              flex-1 min-h-[300px] rounded-xl p-2 space-y-3 transition-colors
+              flex-1 min-h-0 overflow-y-auto rounded-xl p-2 space-y-3 transition-colors
               ${snapshot.isDraggingOver ? 'bg-slate-800/50 border-2 border-dashed border-slate-600' : 'bg-slate-900/30 border border-slate-800'}
             `}
                     >

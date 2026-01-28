@@ -19,6 +19,14 @@ export interface Task {
   attachments: Attachment[];
   status: ColumnId;
   createdAt: string;
+  projectId: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Column {

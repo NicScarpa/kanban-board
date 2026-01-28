@@ -1,14 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Task, COLUMNS, ColumnId } from '@/lib/types';
 import { loadTasks, saveTasks } from '@/lib/storage';
 import KanbanColumn from './KanbanColumn';
 import TaskModal from './TaskModal';
-import { RefreshCw, Plus } from 'lucide-react';
+import { RefreshCw, Plus, ArrowLeft } from 'lucide-react';
 
-export default function KanbanBoard() {
+interface KanbanBoardProps {
+    projectId: string;
+    projectName: string;
+}
+
+export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps) {
+    const router = useRouter();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -16,17 +23,17 @@ export default function KanbanBoard() {
 
     // Load tasks from localStorage on mount
     useEffect(() => {
-        const storedTasks = loadTasks();
+        const storedTasks = loadTasks(projectId);
         setTasks(storedTasks);
         setIsLoaded(true);
-    }, []);
+    }, [projectId]);
 
     // Save tasks to localStorage whenever they change
     useEffect(() => {
         if (isLoaded) {
-            saveTasks(tasks);
+            saveTasks(tasks, projectId);
         }
-    }, [tasks, isLoaded]);
+    }, [tasks, isLoaded, projectId]);
 
     const onDragEnd = (result: DropResult) => {
         const { destination, source, draggableId } = result;
@@ -45,15 +52,11 @@ export default function KanbanBoard() {
         movedTask.status = destination.droppableId as ColumnId;
 
         // Find the right position to insert
-        const destinationTasks = newTasks.filter((t) => t.status === destination.droppableId);
-        const insertIndex = destination.index;
-
-        // Calculate the actual index in the full array
         let actualIndex = 0;
         let columnCount = 0;
         for (let i = 0; i < newTasks.length; i++) {
             if (newTasks[i].status === destination.droppableId) {
-                if (columnCount === insertIndex) {
+                if (columnCount === destination.index) {
                     actualIndex = i;
                     break;
                 }
@@ -117,7 +120,17 @@ export default function KanbanBoard() {
             {/* Header */}
             <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800">
                 <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-between">
-                    <h1 className="text-xl font-bold text-slate-100">Kanban Board</h1>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => router.push('/')}
+                            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                        >
+                            <ArrowLeft size={16} />
+                            Projects
+                        </button>
+                        <span className="text-slate-600">/</span>
+                        <h1 className="text-xl font-bold text-slate-100">{projectName}</h1>
+                    </div>
                     <div className="flex items-center gap-4">
                         <button
                             onClick={handleAddTask}
@@ -137,7 +150,7 @@ export default function KanbanBoard() {
                 </div>
             </header>
             {/* Board */}
-            <main className="flex-1 p-6 overflow-x-auto overflow-y-hidden">
+            <main className="flex-1 min-h-0 p-6 overflow-x-auto overflow-y-hidden">
                 <DragDropContext onDragEnd={onDragEnd}>
                     <div className="flex gap-4 min-w-max h-full">
                         {COLUMNS.map((column) => (
@@ -164,6 +177,7 @@ export default function KanbanBoard() {
                 }}
                 onSave={handleSaveTask}
                 task={editingTask}
+                projectId={projectId}
             />
         </div>
     );

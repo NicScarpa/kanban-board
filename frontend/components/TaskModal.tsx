@@ -11,9 +11,10 @@ interface TaskModalProps {
     onSave: (task: Task) => void;
     task?: Task | null;
     defaultStatus?: ColumnId;
+    projectId: string;
 }
 
-export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus = 'planning' }: TaskModalProps) {
+export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus = 'planning', projectId }: TaskModalProps) {
     const [title, setTitle] = useState(task?.title || '');
     const [description, setDescription] = useState(task?.description || '');
     const [priority, setPriority] = useState<Priority>(task?.priority || 'medium');
@@ -98,6 +99,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus
             attachments,
             status: task?.status || defaultStatus,
             createdAt: task?.createdAt || new Date().toISOString(),
+            projectId: projectId,
         };
 
         onSave(newTask);
