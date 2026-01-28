@@ -20,6 +20,7 @@ export interface Task {
   status: ColumnId;
   createdAt: string;
   projectId: string;
+  order?: number; // Used to preserve manual ordering after drag & drop
 }
 
 export interface Project {

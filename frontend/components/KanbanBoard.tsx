@@ -8,6 +8,52 @@ import { loadTasks, saveTasks } from '@/lib/storage';
 import KanbanColumn from './KanbanColumn';
 import TaskModal from './TaskModal';
 import { RefreshCw, Plus, ArrowLeft } from 'lucide-react';
+import { Priority } from '@/lib/types';
+
+// Priority to order weight mapping
+const PRIORITY_WEIGHT: Record<Priority, number> = {
+  urgent: 0,   // Highest priority
+  high: 100,
+  medium: 200,
+  low: 300,    // Lowest priority
+};
+
+/**
+ * Calculates the order value for a new task based on its priority.
+ * Tasks with higher priority get lower order values (appear first).
+ * Inserts new task between existing tasks of same priority.
+ */
+const calculateTaskOrder = (
+  newTask: Task,
+  existingTasksInColumn: Task[]
+): number => {
+  const priorityBase = PRIORITY_WEIGHT[newTask.priority];
+
+  // Filter tasks with same or adjacent priority that have order values
+  const relevantTasks = existingTasksInColumn.filter(
+    t => t.order !== undefined &&
+         Math.abs(PRIORITY_WEIGHT[t.priority] - priorityBase) < 200
+  );
+
+  if (relevantTasks.length === 0) {
+    // No existing tasks with order, use priority base + small offset
+    return priorityBase + 50;
+  }
+
+  // Find tasks of same priority
+  const samePriorityTasks = relevantTasks.filter(
+    t => t.priority === newTask.priority
+  );
+
+  if (samePriorityTasks.length === 0) {
+    // No tasks of same priority, place at priority boundary
+    return priorityBase + 50;
+  }
+
+  // Insert at end of same-priority group
+  const maxOrder = Math.max(...samePriorityTasks.map(t => t.order!));
+  return maxOrder + 1;
+};
 
 interface KanbanBoardProps {
     projectId: string;
@@ -66,7 +112,33 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
         }
 
         newTasks.splice(actualIndex, 0, movedTask);
-        setTasks(newTasks);
+
+        // Recalculate order values for tasks in both source and destination columns
+        const sourceColumnTasks = newTasks
+            .filter(t => t.status === source.droppableId)
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+        const destColumnTasks = newTasks
+            .filter(t => t.status === destination.droppableId)
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+        // Reassign sequential order values
+        sourceColumnTasks.forEach((task, index) => {
+            task.order = index * 10;  // Use increments of 10 for future insertions
+        });
+
+        destColumnTasks.forEach((task, index) => {
+            task.order = index * 10;
+        });
+
+        // Update the main array with new order values
+        const updatedTasks = newTasks.map(task => {
+            const sourceTask = sourceColumnTasks.find(t => t.id === task.id);
+            const destTask = destColumnTasks.find(t => t.id === task.id);
+            return sourceTask || destTask || task;
+        });
+
+        setTasks(updatedTasks);
     };
 
     const handleAddTask = () => {
@@ -83,11 +155,17 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
         setTasks((prev) => {
             const existingIndex = prev.findIndex((t) => t.id === task.id);
             if (existingIndex >= 0) {
+                // Editing existing task - preserve its order
                 const newTasks = [...prev];
-                newTasks[existingIndex] = task;
+                newTasks[existingIndex] = { ...task, order: prev[existingIndex].order };
                 return newTasks;
             }
-            return [...prev, task];
+
+            // New task - calculate order based on priority
+            const tasksInSameColumn = prev.filter(t => t.status === task.status);
+            const order = calculateTaskOrder(task, tasksInSameColumn);
+
+            return [...prev, { ...task, order }];
         });
     };
 
@@ -104,7 +182,15 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
     };
 
     const getTasksForColumn = (columnId: ColumnId) => {
-        return tasks.filter((t) => t.status === columnId);
+        const columnTasks = tasks.filter((t) => t.status === columnId);
+
+        // Sort by order field (lower values first)
+        // Tasks without order field appear at the end
+        return columnTasks.sort((a, b) => {
+            const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+            const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+            return orderA - orderB;
+        });
     };
 
     if (!isLoaded) {
