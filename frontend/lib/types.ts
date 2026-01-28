@@ -38,6 +38,19 @@ export const COLUMNS: Column[] = [
   { id: 'done', title: 'Done', color: '#22C55E', emptyMessage: 'No completed tasks', emptyIcon: 'check-circle' },
 ];
 
+export interface PromptGenerationParams {
+  planMode: boolean;
+  taskBreakdown: boolean;
+  codeOrganization: boolean;
+  testCoverage: boolean;
+}
+
+export interface ClarifyingQuestion {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 export const PRIORITY_COLORS: Record<Priority, { bg: string; text: string }> = {
   low: { bg: 'bg-slate-700', text: 'text-slate-300' },
   medium: { bg: 'bg-blue-900/50', text: 'text-blue-300' },
