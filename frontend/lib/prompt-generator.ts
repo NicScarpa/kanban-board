@@ -8,7 +8,7 @@ import { PromptGenerationParams, ClarifyingQuestion, Attachment } from './types'
 
 const execFileAsync = promisify(execFile);
 
-const MODEL = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-opus-4-5-20251101';
 const MAX_TOKENS = 2048;
 const CLI_TIMEOUT = 30000;
 
@@ -193,6 +193,7 @@ async function callViaCli(system: string, content: MessageContent[]): Promise<st
   try {
     // Try common CLI locations
     const cliPaths = [
+      join(process.env.HOME || '~', '.local', 'bin', 'claude'),
       join(process.env.HOME || '~', '.claude', 'local', 'claude'),
       '/usr/local/bin/claude',
       'claude',
