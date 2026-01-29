@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Task, Priority, ColumnId, Attachment, PromptGenerationParams, ClarifyingQuestion, COLUMNS, PRIORITY_COLORS } from '@/lib/types';
-import { X, Upload, Trash2, FileText, Image as ImageIcon, Sparkles, Copy, Check, Loader2, MessageCircleQuestion } from 'lucide-react';
+import { X, Upload, Trash2, FileText, Image as ImageIcon, Sparkles, Copy, Check, Loader2, MessageCircleQuestion, Download } from 'lucide-react';
+import ImageLightbox from './ImageLightbox';
 import { v4 as uuidv4 } from 'uuid';
 
 interface TaskModalProps {
@@ -22,6 +23,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus
     const [prompt, setPrompt] = useState(task?.prompt || '');
     const [attachments, setAttachments] = useState<Attachment[]>(task?.attachments || []);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [lightboxImage, setLightboxImage] = useState<Attachment | null>(null);
 
     // Prompt generation state
     const [isGenerating, setIsGenerating] = useState(false);
@@ -83,6 +85,15 @@ export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus
 
     const removeAttachment = (id: string) => {
         setAttachments((prev) => prev.filter((a) => a.id !== id));
+    };
+
+    const handleDownload = (attachment: Attachment) => {
+        const link = document.createElement('a');
+        link.href = attachment.url;
+        link.download = attachment.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -465,7 +476,10 @@ export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus
                                         className="flex items-center gap-3 p-2 bg-slate-800 rounded-lg"
                                     >
                                         {att.type === 'image' ? (
-                                            <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
+                                            <div
+                                                className="w-10 h-10 rounded overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-500"
+                                                onClick={() => setLightboxImage(att)}
+                                            >
                                                 <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
                                             </div>
                                         ) : (
@@ -476,8 +490,17 @@ export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus
                                         <span className="flex-1 text-sm text-slate-300 truncate">{att.name}</span>
                                         <button
                                             type="button"
+                                            onClick={() => handleDownload(att)}
+                                            className="p-1 text-slate-500 hover:text-blue-400 transition-colors"
+                                            title="Download"
+                                        >
+                                            <Download size={14} />
+                                        </button>
+                                        <button
+                                            type="button"
                                             onClick={() => removeAttachment(att.id)}
                                             className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                                            title="Remove"
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -505,6 +528,15 @@ export default function TaskModal({ isOpen, onClose, onSave, task, defaultStatus
                     </div>
                 </form>
             </div>
+
+            {/* Image Lightbox */}
+            {lightboxImage && (
+                <ImageLightbox
+                    imageUrl={lightboxImage.url}
+                    imageName={lightboxImage.name}
+                    onClose={() => setLightboxImage(null)}
+                />
+            )}
         </div>
     );
 }
