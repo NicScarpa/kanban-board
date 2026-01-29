@@ -7,7 +7,7 @@ export interface Attachment {
 
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
-export type ColumnId = 'planning' | 'error' | 'in-progress' | 'human-review' | 'ai-review' | 'done';
+export type ColumnId = 'planning' | 'error' | 'in-progress' | 'human-review' | 'ai-review' | 'to-verify' | 'done';
 
 export interface Task {
   id: string;
@@ -40,11 +40,12 @@ export interface Column {
 
 export const COLUMNS: Column[] = [
   { id: 'planning', title: 'Planning', color: '#6B7280', emptyMessage: 'Add tasks to plan', emptyIcon: 'plus' },
-  { id: 'error', title: 'Error to Fix', color: '#EF4444', emptyMessage: 'No errors to fix', emptyIcon: 'check' },
-  { id: 'in-progress', title: 'In Progress', color: '#3B82F6', emptyMessage: 'Nothing running', emptyIcon: 'loader' },
-  { id: 'human-review', title: 'Human Review', color: '#EC4899', emptyMessage: 'Nothing to review', emptyIcon: 'eye' },
+  { id: 'error', title: 'To Be Planned', color: '#EF4444', emptyMessage: 'No tasks to plan', emptyIcon: 'clipboard' },
+  { id: 'in-progress', title: 'Prompt to be Generated', color: '#3B82F6', emptyMessage: 'No prompts pending', emptyIcon: 'loader' },
+  { id: 'human-review', title: 'Prompt Generated', color: '#EC4899', emptyMessage: 'No prompts ready', emptyIcon: 'file-text' },
   { id: 'ai-review', title: 'AI Review', color: '#F59E0B', emptyMessage: 'No tasks in review', emptyIcon: 'eye' },
-  { id: 'done', title: 'Done', color: '#22C55E', emptyMessage: 'No completed tasks', emptyIcon: 'check-circle' },
+  { id: 'to-verify', title: 'To Verify', color: '#06B6D4', emptyMessage: 'No tasks to verify', emptyIcon: 'check-square' },
+  { id: 'done', title: 'Implemented', color: '#22C55E', emptyMessage: 'No implemented tasks', emptyIcon: 'check-circle' },
 ];
 
 export interface PromptGenerationParams {

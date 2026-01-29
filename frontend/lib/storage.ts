@@ -168,12 +168,13 @@ export async function saveTasks(tasks: Task[], projectId: string): Promise<void>
 
 export async function getTaskCountsByProject(
   projectId: string
-): Promise<{ total: number; planning: number; inProgress: number; done: number }> {
+): Promise<{ total: number; planning: number; inProgress: number; toVerify: number; done: number }> {
   const tasks = await loadTasks(projectId);
   return {
     total: tasks.length,
     planning: tasks.filter(t => t.status === 'planning').length,
     inProgress: tasks.filter(t => t.status === 'in-progress').length,
+    toVerify: tasks.filter(t => t.status === 'to-verify').length,
     done: tasks.filter(t => t.status === 'done').length,
   };
 }

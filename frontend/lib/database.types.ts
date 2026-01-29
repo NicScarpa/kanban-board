@@ -38,7 +38,7 @@ export interface Database {
           tags: string[]
           prompt: string | null
           attachments: Json
-          status: 'planning' | 'error' | 'in-progress' | 'human-review' | 'ai-review' | 'done'
+          status: 'planning' | 'error' | 'in-progress' | 'human-review' | 'ai-review' | 'to-verify' | 'done'
           order: number | null
           project_id: string
           created_at: string
@@ -52,7 +52,7 @@ export interface Database {
           tags?: string[]
           prompt?: string | null
           attachments?: Json
-          status: 'planning' | 'error' | 'in-progress' | 'human-review' | 'ai-review' | 'done'
+          status: 'planning' | 'error' | 'in-progress' | 'human-review' | 'ai-review' | 'to-verify' | 'done'
           order?: number | null
           project_id: string
           created_at?: string

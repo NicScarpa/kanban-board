@@ -1,7 +1,7 @@
 'use client';
 
 import { Column, Task } from '@/lib/types';
-import { Loader2, Eye, CheckCircle, AlertTriangle, LayoutList } from 'lucide-react';
+import { Loader2, Eye, CheckCircle, AlertTriangle, LayoutList, ClipboardList, FileText, CheckSquare } from 'lucide-react';
 import TaskCard from './TaskCard';
 import { Droppable } from '@hello-pangea/dnd';
 
@@ -21,6 +21,9 @@ const iconMap: Record<string, React.ReactNode> = {
     'check': <CheckCircle size={24} className="text-slate-600" />,
     'check-circle': <CheckCircle size={24} className="text-slate-600" />,
     'alert': <AlertTriangle size={24} className="text-slate-600" />,
+    'clipboard': <ClipboardList size={24} className="text-slate-600" />,
+    'file-text': <FileText size={24} className="text-slate-600" />,
+    'check-square': <CheckSquare size={24} className="text-slate-600" />,
 };
 
 export default function KanbanColumn({
@@ -67,10 +70,11 @@ export default function KanbanColumn({
                                 <p className="text-sm text-slate-500 mt-2">{column.emptyMessage}</p>
                                 {column.id !== 'planning' && (
                                     <p className="text-xs text-slate-600 mt-1">
-                                        {column.id === 'in-progress' ? 'Start a task from Backlog' :
+                                        {column.id === 'in-progress' ? 'Move tasks here to generate prompts' :
                                             column.id === 'ai-review' ? 'AI will review completed tasks' :
-                                                column.id === 'human-review' ? 'Tasks await your approval here' :
-                                                    'Tasks will appear here'}
+                                                column.id === 'human-review' ? 'Generated prompts appear here' :
+                                                    column.id === 'to-verify' ? 'Tasks ready for verification' :
+                                                        'Tasks will appear here'}
                                     </p>
                                 )}
                             </div>

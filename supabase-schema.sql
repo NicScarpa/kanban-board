@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   tags TEXT[] DEFAULT '{}',
   prompt TEXT,
   attachments JSONB DEFAULT '[]',
-  status TEXT NOT NULL CHECK (status IN ('planning', 'error', 'in-progress', 'human-review', 'ai-review', 'done')),
+  status TEXT NOT NULL CHECK (status IN ('planning', 'error', 'in-progress', 'human-review', 'ai-review', 'to-verify', 'done')),
   "order" INTEGER,
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
