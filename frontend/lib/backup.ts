@@ -120,7 +120,7 @@ export async function createServerBackup({ skipIfUnchanged = true } = {}): Promi
   };
 }
 
-async function pruneOldBackups(supabase: ReturnType<typeof createClient>) {
+async function pruneOldBackups(supabase: ReturnType<typeof getServiceClient>) {
   const { data: files, error } = await supabase.storage
     .from(BUCKET_NAME)
     .list('', { sortBy: { column: 'created_at', order: 'asc' } });
