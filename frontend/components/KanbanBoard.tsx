@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Task, COLUMNS, ColumnId } from '@/lib/types';
-import { loadTasks, saveTasks } from '@/lib/storage';
+import { loadTasks, saveTasks, downloadBackup, saveLocalBackup } from '@/lib/storage';
 import KanbanColumn from './KanbanColumn';
 import TaskModal from './TaskModal';
-import { RefreshCw, Plus, ArrowLeft } from 'lucide-react';
+import { RefreshCw, Plus, ArrowLeft, Download } from 'lucide-react';
 import { Priority } from '@/lib/types';
 
 // Priority to order weight mapping
@@ -67,6 +67,7 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const initialTaskCountRef = useRef<number>(0);
 
     // Load tasks from Supabase on mount
     useEffect(() => {
@@ -75,6 +76,7 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
             try {
                 const storedTasks = await loadTasks(projectId);
                 setTasks(storedTasks);
+                initialTaskCountRef.current = storedTasks.length;
             } catch (error) {
                 console.error('Failed to load tasks:', error);
             } finally {
@@ -88,9 +90,15 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
     // Save tasks to Supabase whenever they change (with debounce)
     useEffect(() => {
         if (isLoaded) {
+            // Guard: skip save if tasks are empty but DB had tasks (prevents accidental wipe)
+            if (tasks.length === 0 && initialTaskCountRef.current > 0) {
+                return;
+            }
+
             const timeoutId = setTimeout(async () => {
                 try {
                     await saveTasks(tasks, projectId);
+                    saveLocalBackup(tasks, projectId);
                 } catch (error) {
                     console.error('Failed to save tasks:', error);
                 }
@@ -158,6 +166,14 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
         });
 
         setTasks(updatedTasks);
+    };
+
+    const handleExportBackup = async () => {
+        try {
+            await downloadBackup();
+        } catch (error) {
+            console.error('Failed to export backup:', error);
+        }
     };
 
     const handleAddTask = () => {
@@ -243,6 +259,13 @@ export default function KanbanBoard({ projectId, projectName }: KanbanBoardProps
                         >
                             <Plus size={16} />
                             Add task
+                        </button>
+                        <button
+                            onClick={handleExportBackup}
+                            className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                        >
+                            <Download size={14} />
+                            Export Backup
                         </button>
                         <button
                             onClick={() => window.location.reload()}
